@@ -2,6 +2,7 @@
 import kaplay from "kaplay";
 import { createPlayer } from "./player";
 import { createMeteor } from "./meteor";
+import { createPower } from "./power";
 
 export function startGame(k) {
   k.scene("game", () => {
@@ -15,7 +16,7 @@ export function startGame(k) {
 
     let player = createPlayer(k);
     // cria meteoros aleatoriamente a cada 5 segundos
-    k.loop(3.5, () => {
+    k.loop(5, () => {
       createMeteor(k, player);
     });
 
@@ -43,10 +44,14 @@ export function startGame(k) {
       k.destroy(bullet);
     });
 
+    createPower(k, 0, player.health);
+
     let currentHealth = player.health;
     k.onCollide("player", "meteor", (player, meteor) => {
       currentHealth -= 1;
       counterUI.text = currentHealth;
+      k.get("power").forEach(k.destroy); // remove vidas antigas
+      createPower(k, 0, currentHealth);
       k.destroy(meteor);
 
       if (currentHealth <= 0) {
@@ -55,6 +60,10 @@ export function startGame(k) {
     });
 
     const counterUI = k.add([k.text(player.health)]);
+
+    // function UpdateLives(currentHealth) {
+    //   createPower(k, 0, player.health);
+    // }
   });
 
   k.scene("gameover", () => {

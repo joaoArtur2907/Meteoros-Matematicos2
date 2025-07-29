@@ -74,6 +74,7 @@ export function createMeteor(k, player) {
   const angle = meteor.pos.angle(player.pos);
   meteor.angle = angle + 90;
 
+  // gira levemente meteoro
   meteor.onStateUpdate("move", async () => {
     if (!player.exists()) return;
     const dir = player.pos.sub(meteor.pos).unit();
