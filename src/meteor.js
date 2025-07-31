@@ -60,6 +60,7 @@ export function createMeteor(k, player) {
     k.area(),
     // k.area({ shape: new k.Rect(k.vec2(0, 0), 1050, 1050) }),
     k.rotate(),
+    k.body(),
     "meteor",
     k.state("move", ["move", "dead", "hit"]),
     {
@@ -102,7 +103,9 @@ export function createMeteor(k, player) {
   });
 
   meteor.add([
-    k.text(meteor.firstNumOp + meteor.operation + meteor.secondNumOp),
+    k.text(meteor.firstNumOp + meteor.operation + meteor.secondNumOp, {
+      font: "Silkscreen",
+    }),
     k.scale(0.4),
     k.color(k.Color.fromHex("#F9ECE7")),
     k.pos(-15, -7),

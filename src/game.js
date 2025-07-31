@@ -3,70 +3,49 @@ import kaplay from "kaplay";
 import { createPlayer } from "./player";
 import { createMeteor } from "./meteor";
 import { createPower } from "./power";
+import { startPhase1 } from "./phases/phase1";
+import { startPhase2 } from "./phases/phase2";
 
 export function startGame(k) {
+  k.loadFont("Silkscreen", "/assets/Silkscreen-Regular.ttf");
   k.scene("game", () => {
     k.loadSprite("bg", "/assets/bg3.png");
-    k.add([
+    const SPEED = 5500;
+    const bg1 = k.add([
       k.sprite("bg"),
       k.pos(0, 0),
       k.scale(k.width() / 1280, k.height() / 720),
-      k.fixed(),
+      "bg",
     ]);
 
+    const bg2 = k.add([
+      k.sprite("bg"),
+      k.pos(0, -k.height()),
+      k.scale(k.width() / 1280, k.height() / 720),
+      "bg",
+    ]);
+
+    k.onUpdate(() => {
+      bg1.move(0, SPEED * k.dt());
+      bg2.move(0, SPEED * k.dt());
+
+      // Quando sair da tela, reposiciona para cima
+      if (bg1.pos.y >= k.height()) {
+        bg1.pos.y = bg2.pos.y - k.height();
+      }
+
+      if (bg2.pos.y >= k.height()) {
+        bg2.pos.y = bg1.pos.y - k.height();
+      }
+    });
+
     let player = createPlayer(k);
-    // cria meteoros aleatoriamente a cada 5 segundos
-    k.loop(5, () => {
-      createMeteor(k, player);
-    });
-
-    k.onCollide("meteor", "bullet", async (meteor, bullet) => {
-      const operations = {
-        "+": (a, b) => a + b,
-        "-": (a, b) => a - b,
-        "*": (a, b) => a * b,
-        "%": (a, b) => a % b,
-      };
-
-      const result = operations[meteor.operation]?.(
-        meteor.firstNumOp,
-        meteor.secondNumOp
-      );
-
-      if (bullet.value == result) {
-        meteor.enterState("dead");
-        await k.wait(1);
-        k.destroy(meteor);
-      } else {
-        k.debug.log("errou");
-        meteor.enterState("hit");
-      }
-      k.destroy(bullet);
-    });
-
-    createPower(k, 0, player.health);
-
-    let currentHealth = player.health;
-    k.onCollide("player", "meteor", (player, meteor) => {
-      currentHealth -= 1;
-      counterUI.text = currentHealth;
-      k.get("power").forEach(k.destroy); // remove vidas antigas
-      createPower(k, 0, currentHealth);
-      k.destroy(meteor);
-
-      if (currentHealth <= 0) {
-        k.go("gameover");
-      }
-    });
-
-    const counterUI = k.add([k.text(player.health)]);
-
-    // function UpdateLives(currentHealth) {
-    //   createPower(k, 0, player.health);
-    // }
+    startPhase2(k, player);
   });
 
   k.scene("gameover", () => {
     k.add([k.text("Game Over!"), k.pos(k.center()), k.anchor("center")]);
   });
+
+  k.go("game");
 }
