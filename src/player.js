@@ -12,46 +12,73 @@ function shoot(k, player, value) {
     k.area(),
     k.offscreen({ destroy: true }),
     k.anchor("center"),
+    k.color(k.Color.fromHex("#FFFFFF")),
+
     "bullet",
     {
       value: value,
+      instaKill: false,
     },
   ]);
-  // k.debug.log(bullet.value);
+
+  if (bullet.instaKill) {
+    bullet.use(k.color(k.Color.fromHex("#D21A1E")));
+  }
 }
 
 function mousePositionAngle(k, player) {
   const mouse = k.mousePos();
-  const angle = player.pos.angle(k.mousePos()) + 180;
+  const angle = player.pos.angle(mouse) + 180;
   return angle;
 }
 
 export function createPlayer(k) {
-  k.loadSprite("player", "/assets/nave.png", {
-    sliceX: 1,
+  k.loadSprite("player", "/assets/nave3.png", {
+    sliceX: 15,
+    anims: {
+      idle: { from: 0, to: 14, speed: 20, loop: true },
+      hit: { from: 14, to: 14 },
+    },
   });
 
   const player = k.add([
     k.sprite("player"),
     k.pos(k.center()),
     k.anchor("center"),
-    k.scale(64 / 640),
+    k.scale(2),
     k.area(),
+    k.state("idle", ["idle", "hit"]),
     "player",
     {
-      health: 3,
+      health: 15,
+      piercingBullet: true,
     },
   ]);
 
+  player.onStateEnter("idle", async () => {
+    await k.wait(0.25);
+    player.enterState("idle");
+    player.play("idle");
+  });
+
+  player.onStateEnter("hit", async () => {
+    player.play("hit");
+    await k.wait(0.5);
+    player.play("idle");
+  });
+
+  // fixes sprite angle
   k.onUpdate(() => {
-    player.angle = mousePositionAngle(k, player);
+    player.angle = mousePositionAngle(k, player) + 90;
   });
 
   let responseBullet = createInput();
 
   function createInput() {
     return k.add([
-      k.text(""),
+      k.text("", {
+        font: "Silkscreen",
+      }),
       "responseBullet",
       k.textInput(true, 5),
       k.anchor("center"),
@@ -62,24 +89,20 @@ export function createPlayer(k) {
 
   // bullet
   let isOnCooldown = false;
-  const COOLDOWN_TIME = 500; // 1 seg
+  const COOLDOWN_TIME = 500;
+
   k.onClick(() => {
-    if (isOnCooldown) {
-      // k.debug.log("Recharging");
-      return;
-    }
+    if (isOnCooldown) return;
 
     let value = responseBullet.text;
-
     shoot(k, player, value);
-    isOnCooldown = true;
 
+    isOnCooldown = true;
     responseBullet.destroy();
     responseBullet = createInput();
 
     setTimeout(() => {
       isOnCooldown = false;
-      // k.debug.log("Recharged");
     }, COOLDOWN_TIME);
   });
 
