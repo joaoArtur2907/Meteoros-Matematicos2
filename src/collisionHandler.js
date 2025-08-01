@@ -1,10 +1,9 @@
 // @ts-check
 import kaplay from "kaplay";
-
 import { createPower } from "./power";
 
 export function bulletMeteorCollision(k, player) {
-  k.onCollide("meteor", "bullet", async (meteor, bullet) => {
+  k.onCollide("meteor", "bullet", (meteor, bullet) => {
     const operations = {
       "+": (a, b) => a + b,
       "-": (a, b) => a - b,
@@ -17,21 +16,22 @@ export function bulletMeteorCollision(k, player) {
       meteor.secondNumOp
     );
 
-    // problem here maybe?
     if (bullet.value == result || bullet.instaKill) {
       meteor.enterState("dead");
-      await k.wait(1);
-      k.destroy(meteor);
+
+      // wait for meteor death animation
+      (async () => {
+        await k.wait(1);
+        k.destroy(meteor);
+      })();
+
       if (player.piercingBullet) {
         bullet.instaKill = true;
         bullet.color = k.Color.fromHex("#D21A1E");
-        k.debug.log(bullet.color);
       } else {
         k.destroy(bullet);
       }
     } else {
-      k.debug.log(bullet.color);
-
       meteor.enterState("hit");
       k.destroy(bullet);
     }

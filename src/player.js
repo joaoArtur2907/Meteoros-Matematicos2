@@ -13,7 +13,6 @@ function shoot(k, player, value) {
     k.offscreen({ destroy: true }),
     k.anchor("center"),
     k.color(k.Color.fromHex("#FFFFFF")),
-    k.opacity(0.5),
 
     "bullet",
     {
