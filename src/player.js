@@ -1,5 +1,6 @@
 // @ts-check
 import kaplay from "kaplay";
+import { killMeteor } from "./collisionHandler";
 
 function shoot(k, player, value) {
   let BULLET_SPEED = 400;
@@ -13,7 +14,6 @@ function shoot(k, player, value) {
     k.offscreen({ destroy: true }),
     k.anchor("center"),
     k.color(k.Color.fromHex("#FFFFFF")),
-
     "bullet",
     {
       value: value,
@@ -50,8 +50,11 @@ export function createPlayer(k) {
     k.state("idle", ["idle", "hit"]),
     "player",
     {
-      health: 15,
-      piercingBullet: true,
+      health: 2,
+      piercingBullet: false, // balas atravessam alvos
+      chainExplosion: false, // meteoros explodem outros perto
+      shield: false, // escudo que orbita player e destroi meteoros
+      killingShield: false, // balas que atravessam o escudo viram mortais
     },
   ]);
 
@@ -67,7 +70,7 @@ export function createPlayer(k) {
     player.play("idle");
   });
 
-  // fixes sprite angle
+  // arruma angulo do sprite
   k.onUpdate(() => {
     player.angle = mousePositionAngle(k, player) + 90;
   });
@@ -87,7 +90,8 @@ export function createPlayer(k) {
     ]);
   }
 
-  // bullet
+  k.loadSound("pew", "/assets/pew_shot.wav");
+  // tiro
   let isOnCooldown = false;
   const COOLDOWN_TIME = 500;
 
@@ -96,7 +100,10 @@ export function createPlayer(k) {
 
     let value = responseBullet.text;
     shoot(k, player, value);
-
+    k.play("pew", {
+      volume: 0.2,
+      speed: 1,
+    });
     isOnCooldown = true;
     responseBullet.destroy();
     responseBullet = createInput();
@@ -105,6 +112,60 @@ export function createPlayer(k) {
       isOnCooldown = false;
     }, COOLDOWN_TIME);
   });
+
+  function shield() {
+    const center = k.add([k.pos(k.center()), k.anchor(k.vec2(0, 0))]);
+    const barrier = center.add([k.rotate(0)]);
+    // velocidade de rotacao do escudo
+    barrier.onUpdate(() => {
+      barrier.rotateBy(10 * k.dt());
+    });
+
+    const shield = barrier.add([
+      k.rect(50, 10),
+      k.pos(180, 0),
+      k.anchor(k.vec2(0, 0)),
+      k.rotate(0),
+      k.area(),
+      k.body(),
+      "shield",
+    ]);
+    shield.onUpdate(() => {
+      shield.rotateBy(-90 * k.dt());
+      shield.angle = -90;
+    });
+  }
+
+  if (player.shield) {
+    shield();
+  }
+
+  function sentry() {
+    const sentry = k.add([
+      {
+        add() {
+          this.onObjectsSpotted((objects) => {
+            const meteorSeen = objects.some((o) => o.is("meteor"));
+            if (meteorSeen) {
+              sentry.action = "shoot";
+            }
+          });
+        },
+      },
+      k.rect(5, 20),
+      k.pos(600, 400),
+      k.anchor("center"),
+      k.area(),
+      "sentry",
+      k.sentry(
+        { include: "meteor" },
+        {
+          lineOfSight: true,
+        }
+      ),
+    ]);
+  }
+  sentry();
 
   return player;
 }

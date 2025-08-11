@@ -60,7 +60,7 @@ export function createMeteor(k, player) {
     k.area(),
     // k.area({ shape: new k.Rect(k.vec2(0, 0), 1050, 1050) }),
     k.rotate(),
-    k.body(),
+    // k.body(),
     "meteor",
     k.state("move", ["move", "dead", "hit"]),
     {
@@ -110,4 +110,5 @@ export function createMeteor(k, player) {
     k.color(k.Color.fromHex("#F9ECE7")),
     k.pos(-15, -7),
   ]);
+  meteor.enterState("move");
 }

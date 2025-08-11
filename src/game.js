@@ -6,7 +6,10 @@ import { createPower } from "./power";
 import { startPhase1 } from "./phases/phase1";
 import { startPhase2 } from "./phases/phase2";
 
-export function startGame(k) {
+function handleBackground(k) {}
+
+export function startGame(k, fase) {
+  k.loadSound("meteorHit2", "/assets/meteoro_morte_explosao.wav");
   k.loadFont("Silkscreen", "/assets/Silkscreen-Regular.ttf");
   k.scene("game", () => {
     k.loadSprite("bg", "/assets/bg3.png");
@@ -40,11 +43,34 @@ export function startGame(k) {
     });
 
     let player = createPlayer(k);
-    startPhase2(k, player);
+    if (fase === 1) {
+      startPhase1(k, player);
+    }
+    if (fase === 2) {
+      startPhase2(k, player);
+    }
   });
 
   k.scene("gameover", () => {
     k.add([k.text("Game Over!"), k.pos(k.center()), k.anchor("center")]);
+    // Botão Iniciar
+    const returnButton = k.add([
+      k.text("Voltar ao menu", { size: 32 }),
+      k.pos(k.center().x, 250),
+      k.anchor("center"),
+      k.area(),
+      k.color(k.Color.fromHex("#ffffff")),
+      "start-button",
+    ]);
+
+    returnButton.onClick(() => {
+      k.go("menu");
+    });
+    returnButton.onUpdate(() => {
+      returnButton.color = returnButton.isHovering()
+        ? k.Color.fromHex("#ff0000")
+        : k.Color.fromHex("#ffffff");
+    });
   });
 
   k.go("game");
