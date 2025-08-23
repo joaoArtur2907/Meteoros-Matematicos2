@@ -12,19 +12,19 @@ import {
 import { nextPhase, phaseStart, startCollisions } from "./phase1";
 import { phaseMap } from "./phaseMap";
 
-export function startPhase2(k, player) {
-  phaseStart(k, 2);
-  k.debug.log("fase 2");
-  k.wait(5, () => {
+export function startPhase3(k, player) {
+  phaseStart(k, 3);
+  k.debug.log("fase 3");
+
+  k.wait(4, () => {
     k.loop(3.5, () => {
-      createMeteor(k, player);
+      if (!player.storeOpen) createMeteor(k, player);
     });
   });
 
-  // createPower(k, 0, player.health);
+  createPower(k, 0, player.health);
 
-  let timer = 4;
-
+  let timer = 40;
   k.wait(timer, () => {
     nextPhase(k, player, 1, true);
   });

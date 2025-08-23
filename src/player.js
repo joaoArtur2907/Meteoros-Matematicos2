@@ -53,8 +53,9 @@ export function createPlayer(k) {
       health: 2,
       piercingBullet: false, // balas atravessam alvos
       chainExplosion: false, // meteoros explodem outros perto
-      shield: false, // escudo que orbita player e destroi meteoros
+      shield: true, // escudo que orbita player e destroi meteoros
       killingShield: false, // balas que atravessam o escudo viram mortais
+      missile: true,
     },
   ]);
 
@@ -127,6 +128,7 @@ export function createPlayer(k) {
       k.anchor(k.vec2(0, 0)),
       k.rotate(0),
       k.area(),
+      k.color(k.Color.fromHex("#0EDED7")),
       k.body(),
       "shield",
     ]);
@@ -140,32 +142,75 @@ export function createPlayer(k) {
     shield();
   }
 
-  function sentry() {
-    const sentry = k.add([
-      {
-        add() {
-          this.onObjectsSpotted((objects) => {
-            const meteorSeen = objects.some((o) => o.is("meteor"));
-            if (meteorSeen) {
-              sentry.action = "shoot";
-            }
-          });
-        },
-      },
-      k.rect(5, 20),
-      k.pos(600, 400),
-      k.anchor("center"),
-      k.area(),
-      "sentry",
-      k.sentry(
-        { include: "meteor" },
+  function missile() {
+    let missileCooldown = 5;
+    let lastShot = 0;
+    function missile(posX, posY) {
+      const missile = k.add([
         {
-          lineOfSight: true,
-        }
-      ),
-    ]);
-  }
-  sentry();
+          add() {
+            this.onObjectsSpotted((objects) => {
+              const meteorSeen = objects.some((o) => o.is("meteor"));
+              if (meteorSeen) {
+                missile.action = "persuit";
+              }
+            });
+          },
+        },
+        k.rect(5, 20),
+        k.pos(posX, posY),
+        k.anchor("center"),
+        k.color(k.Color.fromHex("#DE690E")),
+        k.area(),
+        k.rotate(0),
+        {
+          cooldown: missileCooldown,
+          speed: 70,
+        },
+        "missile",
+        k.sentry(
+          { include: "meteor" },
+          {
+            lineOfSight: true,
+            raycastExclude: ["missile"],
+          }
+        ),
+      ]);
+      return missile;
+    }
 
+    k.onUpdate("missile", (missile) => {
+      const meteors = k.get("meteor");
+
+      if (meteors.length === 0) return;
+
+      let nearestMeteor = meteors[0];
+      let minDist = missile.pos.dist(nearestMeteor.pos);
+
+      for (let m of meteors) {
+        const dist = missile.pos.dist(m.pos);
+        if (dist < minDist) {
+          minDist = dist;
+          nearestMeteor = m;
+        }
+      }
+
+      const dir = nearestMeteor.pos.sub(missile.pos);
+      missile.angle = dir.angle() + 90;
+
+      missile.moveTo(nearestMeteor.pos, missile.speed);
+    });
+
+    k.onUpdate(() => {
+      if (k.time() - lastShot >= missileCooldown) {
+        missile(player.pos.x, player.pos.y);
+        lastShot = k.time();
+      }
+    });
+  }
+
+  if (player.missile) {
+    missile();
+  }
   return player;
 }

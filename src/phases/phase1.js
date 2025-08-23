@@ -5,6 +5,7 @@ import { createPower } from "../power";
 import {
   bulletMeteorCollision,
   MeteorMeteorCollision,
+  MissileMeteorCollision,
   playerMeteorCollision,
   ShieldBulletCollision,
   ShieldMeteorCollision,
@@ -12,6 +13,15 @@ import {
 import { startPhase2 } from "./phase2";
 import { phaseMap } from "./phaseMap";
 import { createStore } from "./store";
+
+export function startCollisions(k, player) {
+  bulletMeteorCollision(k, player);
+  playerMeteorCollision(k, player);
+  MeteorMeteorCollision(k, player);
+  ShieldMeteorCollision(k, player);
+  ShieldBulletCollision(k, player);
+  MissileMeteorCollision(k, player);
+}
 
 export function nextPhase(k, player, phase, store) {
   k.destroyAll("meteor");
@@ -80,15 +90,11 @@ export function startPhase1(k, player) {
 
   createPower(k, 0, player.health);
 
-  let timer = 3;
+  let timer = 4;
 
   k.wait(timer, () => {
     nextPhase(k, player, 2, false);
   });
 
-  bulletMeteorCollision(k, player);
-  playerMeteorCollision(k, player);
-  MeteorMeteorCollision(k, player);
-  ShieldMeteorCollision(k, player);
-  ShieldBulletCollision(k, player);
+  startCollisions(k, player);
 }

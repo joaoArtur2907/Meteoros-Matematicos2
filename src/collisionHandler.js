@@ -75,7 +75,7 @@ export function playerMeteorCollision(k, player) {
 
     k.get("power").forEach(k.destroy);
     createPower(k, 0, currentHealth);
-    k.destroy(meteor);
+    killMeteor(k, meteor);
 
     if (currentHealth <= 0) {
       k.go("gameover");
@@ -96,6 +96,13 @@ export function ShieldMeteorCollision(k, player) {
   k.onCollide("shield", "meteor", (shield, meteor) => {
     killMeteor(k, meteor);
     k.debug.log("bateu ");
+  });
+}
+
+export function MissileMeteorCollision(k, player) {
+  k.onCollide("missile", "meteor", (missile, meteor) => {
+    killMeteor(k, meteor);
+    k.destroy(missile);
   });
 }
 

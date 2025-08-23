@@ -1,11 +1,8 @@
 // @ts-check
 import kaplay from "kaplay";
 import { startGame } from "../game";
-import { createStore } from "./store";
 
 export function createPhaseSelector(k) {
-  createStore(k);
-
   k.scene("faseSelector", () => {
     k.loadFont("Silkscreen", "/assets/Silkscreen-Regular.ttf");
     k.loadSprite("bgMenu", "/assets/backgroundMenu.jpg");
