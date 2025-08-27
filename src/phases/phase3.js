@@ -9,10 +9,9 @@ import {
   startCollisions,
   scrapCounter,
 } from "./phaseUtils";
-import { createSaw } from "../upgrades/saw";
 
-export function createPhase2Scene(k) {
-  k.scene("phase2", (data) => {
+export function createPhase3Scene(k) {
+  k.scene("phase3", (data) => {
     createBackground(k);
     let player = createPlayer(k);
 
@@ -25,43 +24,19 @@ export function createPhase2Scene(k) {
       Object.assign(player, data.playerState);
     }
 
-    phaseStart(k, 2);
-    k.debug.log("fase 2");
-
-    let dashCooldown;
+    phaseStart(k, 3);
+    k.debug.log("fase 3");
 
     if (player.shield) {
       player.activateShield();
     }
     if (player.missile) {
       player.activateMissile();
-      dashCooldown = k.add([
-        k.text(10, {
-          font: "Silkscreen",
-          size: 24,
-          width: 190,
-          align: "center",
-        }),
-        {
-          value: player.superDashCooldown,
-        },
-        k.pos(100, 300),
-        "dashCooldown",
-        k.anchor("center"),
-        k.color(k.Color.fromHex("#FFD700")),
-      ]);
-
-      k.onUpdate(() => {
-        dashCooldown.value -= 1;
-        dashCooldown.text = dashCooldown.value;
-      });
-    }
-    if (player.saw) {
-      createSaw(k);
     }
 
-    k.wait(2, () => {
+    k.wait(5, () => {
       k.loop(3.5, () => {
+        createMeteor(k, player);
         createMeteor(k, player);
         createMeteor(k, player);
       });
