@@ -2,99 +2,66 @@
 import kaplay from "kaplay";
 import { createMeteor } from "../meteor";
 import { createPower } from "../power";
+import { createPlayer } from "../player";
 import {
-  bulletMeteorCollision,
-  MeteorMeteorCollision,
-  MissileMeteorCollision,
-  playerMeteorCollision,
-  ShieldBulletCollision,
-  ShieldMeteorCollision,
-} from "../collisionHandler";
-import { startPhase2 } from "./phase2";
-import { phaseMap } from "./phaseMap";
-import { createStore } from "./store";
+  createBackground,
+  phaseStart,
+  scrapCounter,
+  startCollisions,
+} from "./phaseUtils";
+import { createSaw } from "../upgrades/saw";
 
-export function startCollisions(k, player) {
-  bulletMeteorCollision(k, player);
-  playerMeteorCollision(k, player);
-  MeteorMeteorCollision(k, player);
-  ShieldMeteorCollision(k, player);
-  ShieldBulletCollision(k, player);
-  MissileMeteorCollision(k, player);
-}
+export function createPhase1Scene(k) {
+  k.scene("phase1", (data) => {
+    createBackground(k);
+    let player = createPlayer(k);
 
-export function nextPhase(k, player, phase, store) {
-  k.destroyAll("meteor");
-  createStore(k, player);
-
-  const overlay = k.add([
-    k.rect(1280, 720),
-    k.color(k.BLACK),
-    k.pos(0, 0),
-    k.opacity(0.1),
-    "overlay",
-    { z: 100 },
-  ]);
-
-  overlay.onUpdate(() => {
-    if (overlay.opacity < 1) {
-      overlay.opacity += k.dt() * 0.2;
-    } else {
-      if (store) {
-        k.go("store");
-      } else {
-        phaseMap[phase](k, player);
-        overlay.destroy();
-      }
+    if (data?.playerState) {
+      Object.assign(player, data.playerState);
     }
-  });
-}
 
-export function phaseStart(k, phase) {
-  const phaseName = k.add([
-    k.text("FASE " + phase, {
-      font: "Silkscreen",
-      size: 108,
-    }),
-    k.pos(k.center().x, 200),
-    k.anchor("center"),
-  ]);
-  const overlay = k.add([
-    k.rect(1280, 720),
-    k.color(k.BLACK),
-    k.pos(0, 0),
-    k.opacity(1),
-    "overlay",
-    { z: 100 },
-  ]);
-
-  overlay.onUpdate(() => {
-    overlay.opacity -= k.dt() * 0.2;
-
-    if (overlay.opacity <= 0) {
-      overlay.destroy();
-      phaseName.destroy();
-    }
-  });
-}
-
-export function startPhase1(k, player) {
-  phaseStart(k, 1);
-  k.debug.log("fase 1");
-
-  k.wait(5, () => {
-    k.loop(4, () => {
-      createMeteor(k, player);
+    k.onUpdate(() => {
+      k.get("scrapCounter").forEach(k.destroy);
+      scrapCounter(k, player);
     });
+
+    phaseStart(k, 1);
+    k.debug.log("fase 1");
+
+    k.wait(2, () => {
+      k.loop(4, () => {
+        createMeteor(k, player);
+      });
+    });
+    if (player.shield) {
+      player.activateShield();
+    }
+    if (player.missile) {
+      player.activateMissile();
+    }
+    if (player.saw) {
+      createSaw(k);
+    }
+
+    createPower(k, 0, player.health);
+
+    let timer = 10;
+    k.wait(timer, () => {
+      const playerState = {
+        health: player.health,
+        piercingBullet: player.piercingBullet,
+        chainExplosion: player.chainExplosion,
+        shield: player.shield,
+        killingShield: player.killingShield,
+        missile: player.missile,
+        scraps: player.scraps,
+      };
+
+      k.go("phase2", {
+        playerState: playerState,
+      });
+    });
+
+    startCollisions(k, player);
   });
-
-  createPower(k, 0, player.health);
-
-  let timer = 4;
-
-  k.wait(timer, () => {
-    nextPhase(k, player, 2, false);
-  });
-
-  startCollisions(k, player);
 }

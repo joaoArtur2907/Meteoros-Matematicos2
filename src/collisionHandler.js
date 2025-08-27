@@ -13,11 +13,10 @@ export function killMeteor(k, meteor) {
   meteor.enterState("dead");
 
   k.play("meteorHit2", {
-    volume: 1,
+    volume: 0.5,
     speed: 1,
   });
 
-  // Aguarda a animação terminar (ajuste para o tempo real da sua animação)
   k.wait(0.8).then(() => {
     k.destroy(meteor);
   });
@@ -43,6 +42,8 @@ export function bulletMeteorCollision(k, player) {
 
     if (bullet.value == result || bullet.instaKill) {
       killMeteor(k, meteor);
+      player.scraps += meteor.scrapValue;
+      k.debug.log(player.scraps);
 
       if (player.piercingBullet) {
         upgradeBulletKill(k, bullet);
@@ -51,7 +52,7 @@ export function bulletMeteorCollision(k, player) {
       }
     } else {
       k.play("wrong", {
-        volume: 1,
+        volume: 0.5,
         speed: 1,
       });
       meteor.enterState("hit");
@@ -61,23 +62,25 @@ export function bulletMeteorCollision(k, player) {
 }
 
 export function playerMeteorCollision(k, player) {
-  let currentHealth = player.health;
-
   k.onCollide("player", "meteor", (player, meteor) => {
-    currentHealth -= 1;
-
     k.shake(50);
-    k.play("playerHit", {
-      volume: 1,
-      speed: 1,
-    });
-    player.enterState("hit");
 
-    k.get("power").forEach(k.destroy);
-    createPower(k, 0, currentHealth);
+    if (!player.superDashActive) {
+      player.health -= 1;
+      k.play("playerHit", {
+        volume: 0.5,
+        speed: 1,
+      });
+      player.enterState("hit");
+
+      k.get("power").forEach(k.destroy);
+      createPower(k, 0, player.health);
+    }
+
     killMeteor(k, meteor);
+    player.scraps += 1;
 
-    if (currentHealth <= 0) {
+    if (player.health <= 0) {
       k.go("gameover");
     }
   });
@@ -88,6 +91,8 @@ export function MeteorMeteorCollision(k, player) {
     if (meteor.state === "dead" && player.chainExplosion) {
       killMeteor(k, meteor);
       killMeteor(k, meteor2);
+      player.scraps += meteor.scrapValue;
+      player.scraps += meteor2.scrapValue;
     }
   });
 }
@@ -95,6 +100,7 @@ export function MeteorMeteorCollision(k, player) {
 export function ShieldMeteorCollision(k, player) {
   k.onCollide("shield", "meteor", (shield, meteor) => {
     killMeteor(k, meteor);
+    player.scraps += meteor.scrapValue;
     k.debug.log("bateu ");
   });
 }
@@ -102,7 +108,16 @@ export function ShieldMeteorCollision(k, player) {
 export function MissileMeteorCollision(k, player) {
   k.onCollide("missile", "meteor", (missile, meteor) => {
     killMeteor(k, meteor);
+    player.scraps += meteor.scrapValue;
     k.destroy(missile);
+  });
+}
+
+export function SawMeteorCollision(k, player) {
+  k.onCollide("saw", "meteor", (saw, meteor) => {
+    saw.enterState("hit");
+    killMeteor(k, meteor);
+    player.scraps += meteor.scrapValue;
   });
 }
 

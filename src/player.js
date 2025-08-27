@@ -33,11 +33,12 @@ function mousePositionAngle(k, player) {
 }
 
 export function createPlayer(k) {
-  k.loadSprite("player", "/assets/nave3.png", {
-    sliceX: 15,
+  k.loadSprite("player", "/assets/nave(1).png", {
+    sliceX: 17,
     anims: {
-      idle: { from: 0, to: 14, speed: 20, loop: true },
+      idle: { from: 0, to: 13, speed: 20, loop: true },
       hit: { from: 14, to: 14 },
+      superDash: { from: 15, to: 16, speed: 20, loop: true },
     },
   });
 
@@ -46,28 +47,35 @@ export function createPlayer(k) {
     k.pos(k.center()),
     k.anchor("center"),
     k.scale(2),
-    k.area(),
-    k.state("idle", ["idle", "hit"]),
+    k.area({ shape: new k.Rect(k.vec2(0), 15, 15) }),
+    k.state("idle", ["idle", "hit", "superDash"]),
     "player",
     {
-      health: 2,
+      scraps: 10,
+      health: 2, // vida
       piercingBullet: false, // balas atravessam alvos
       chainExplosion: false, // meteoros explodem outros perto
-      shield: true, // escudo que orbita player e destroi meteoros
+      shield: false, // escudo que orbita player e destroi meteoros
       killingShield: false, // balas que atravessam o escudo viram mortais
-      missile: true,
+      missile: true, // misseis teleguiados a cada poucos segundos
+      speed: 5, // velocidade de movimento da nave
+      superDash: true, // dash que atravessa meteoros
+      superDashActive: false,
+      superDashCooldown: 10000,
     },
   ]);
 
   player.onStateEnter("idle", async () => {
-    await k.wait(0.25);
-    player.enterState("idle");
     player.play("idle");
+  });
+
+  player.onStateEnter("superDash", async () => {
+    player.play("superDash");
   });
 
   player.onStateEnter("hit", async () => {
     player.play("hit");
-    await k.wait(0.5);
+    await k.wait(1.5);
     player.play("idle");
   });
 
@@ -94,24 +102,56 @@ export function createPlayer(k) {
   k.loadSound("pew", "/assets/pew_shot.wav");
   // tiro
   let isOnCooldown = false;
+  let isOnCooldownDash = false;
   const COOLDOWN_TIME = 500;
 
-  k.onClick(() => {
-    if (isOnCooldown) return;
+  k.onClick((btn) => {
+    let curTween = null;
+    if (btn == "left") {
+      if (isOnCooldown) return;
 
-    let value = responseBullet.text;
-    shoot(k, player, value);
-    k.play("pew", {
-      volume: 0.2,
-      speed: 1,
-    });
-    isOnCooldown = true;
-    responseBullet.destroy();
-    responseBullet = createInput();
+      let value = responseBullet.text;
+      shoot(k, player, value);
+      k.play("pew", {
+        volume: 0.2,
+        speed: 1,
+      });
+      isOnCooldown = true;
+      responseBullet.destroy();
+      responseBullet = createInput();
 
-    setTimeout(() => {
-      isOnCooldown = false;
-    }, COOLDOWN_TIME);
+      setTimeout(() => {
+        isOnCooldown = false;
+      }, COOLDOWN_TIME);
+    } else if (btn == "right") {
+      if (curTween) k.curTween.cancel();
+
+      if (player.superDash) {
+        player.play("idle");
+        if (!isOnCooldownDash) {
+          player.superDashActive = true;
+          player.play("superDash");
+          isOnCooldownDash = true;
+          setTimeout(() => {
+            isOnCooldownDash = false;
+          }, player.superDashCooldown);
+        }
+      }
+
+      let mousePos = k.mousePos();
+      curTween = k.tween(
+        player.pos,
+        mousePos,
+        player.speed,
+        (val) => (player.pos = val),
+        k.easings.easeOutCubic
+      );
+
+      curTween.onEnd(() => {
+        player.superDashActive = false;
+        player.enterState("idle");
+      });
+    }
   });
 
   function shield() {
@@ -136,10 +176,6 @@ export function createPlayer(k) {
       shield.rotateBy(-90 * k.dt());
       shield.angle = -90;
     });
-  }
-
-  if (player.shield) {
-    shield();
   }
 
   function missile() {
@@ -209,8 +245,8 @@ export function createPlayer(k) {
     });
   }
 
-  if (player.missile) {
-    missile();
-  }
+  player.activateShield = shield;
+  player.activateMissile = missile;
+
   return player;
 }

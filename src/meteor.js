@@ -57,13 +57,14 @@ export function createMeteor(k, player) {
     k.pos(x, y), //1280 max width 720 height
     k.anchor("center"),
     k.scale(4.5),
-    k.area(),
+    k.area({ shape: new k.Rect(k.vec2(0), 15, 15) }),
     // k.area({ shape: new k.Rect(k.vec2(0, 0), 1050, 1050) }),
     k.rotate(),
     // k.body(),
     "meteor",
     k.state("move", ["move", "dead", "hit"]),
     {
+      scrapValue: 1,
       health: 20,
       speed: 50,
       firstNumOp: firstNum,
